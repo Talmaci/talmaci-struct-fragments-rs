@@ -35,5 +35,8 @@ fn main() {
         },
     };
 
-    println!("{}: {} at {}..{} ({})", user.id, user.name, user.created_at, user.updated_at, user.profile.bio);
+    println!(
+        "{}: {} at {}..{} ({})",
+        user.id, user.name, user.created_at, user.updated_at, user.profile.bio
+    );
 }

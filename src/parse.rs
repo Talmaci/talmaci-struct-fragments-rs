@@ -12,7 +12,10 @@ pub(crate) fn is_helper(attribute: &Attribute, name: &str) -> bool {
 pub(crate) fn validate_fragment(attribute: &Attribute) -> Result<()> {
     match &attribute.meta {
         Meta::Path(_) => Ok(()),
-        _ => Err(syn::Error::new_spanned(attribute, "`fragment` does not accept arguments")),
+        _ => Err(syn::Error::new_spanned(
+            attribute,
+            "`fragment` does not accept arguments",
+        )),
     }
 }
 
@@ -29,7 +32,10 @@ pub(crate) fn validate_module_compose(entries: &[ComposeEntry]) -> Result<()> {
         };
 
         if let Some(first_span) = first_self {
-            let mut error = syn::Error::new(self_token.span, "`self` may appear at most once in `compose`");
+            let mut error = syn::Error::new(
+                self_token.span,
+                "`self` may appear at most once in `compose`",
+            );
             error.combine(syn::Error::new(first_span, "first `self` entry is here"));
             return Err(error);
         }
@@ -70,8 +76,9 @@ pub(crate) struct ComposeArgs {
 
 impl Parse for ComposeArgs {
     fn parse(input: ParseStream<'_>) -> Result<Self> {
-        let entries =
-            Punctuated::<ComposeEntry, Token![,]>::parse_terminated(input)?.into_iter().collect::<Vec<_>>();
+        let entries = Punctuated::<ComposeEntry, Token![,]>::parse_terminated(input)?
+            .into_iter()
+            .collect::<Vec<_>>();
 
         if entries.is_empty() {
             return Err(input.error("`compose` requires at least one entry"));

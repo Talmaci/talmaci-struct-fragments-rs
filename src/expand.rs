@@ -9,7 +9,10 @@ use crate::parse::{is_helper, parse_compose, validate_fragment, validate_module_
 
 pub(crate) fn expand(mut module: ItemMod) -> Result<TokenStream> {
     let Some((_, items)) = &mut module.content else {
-        return Err(syn::Error::new_spanned(&module, "`struct_fragments` requires an inline module"));
+        return Err(syn::Error::new_spanned(
+            &module,
+            "`struct_fragments` requires an inline module",
+        ));
     };
 
     reject_helpers_on_non_structs(items)?;
@@ -55,8 +58,11 @@ fn collect_fragments(items: &[Item]) -> Result<HashMap<String, Fragment>> {
             continue;
         };
 
-        let fragment_attributes =
-            item_struct.attrs.iter().filter(|attribute| is_helper(attribute, "fragment")).collect::<Vec<_>>();
+        let fragment_attributes = item_struct
+            .attrs
+            .iter()
+            .filter(|attribute| is_helper(attribute, "fragment"))
+            .collect::<Vec<_>>();
 
         if fragment_attributes.is_empty() {
             continue;
@@ -75,7 +81,11 @@ fn collect_fragments(items: &[Item]) -> Result<HashMap<String, Fragment>> {
             }
         }
 
-        if item_struct.attrs.iter().any(|attribute| is_helper(attribute, "compose")) {
+        if item_struct
+            .attrs
+            .iter()
+            .any(|attribute| is_helper(attribute, "compose"))
+        {
             combine_error(
                 &mut errors,
                 syn::Error::new_spanned(
@@ -99,16 +109,24 @@ fn collect_fragments(items: &[Item]) -> Result<HashMap<String, Fragment>> {
         let Fields::Named(fields) = &item_struct.fields else {
             combine_error(
                 &mut errors,
-                syn::Error::new_spanned(&item_struct.fields, "fragments must be structs with named fields"),
+                syn::Error::new_spanned(
+                    &item_struct.fields,
+                    "fragments must be structs with named fields",
+                ),
             );
             continue;
         };
 
         let name = item_struct.ident.to_string();
         if let Some(previous) = fragments.get(&name) {
-            let mut error =
-                syn::Error::new_spanned(&item_struct.ident, format!("duplicate fragment definition `{name}`"));
-            error.combine(syn::Error::new_spanned(&previous.ident, "first fragment definition is here"));
+            let mut error = syn::Error::new_spanned(
+                &item_struct.ident,
+                format!("duplicate fragment definition `{name}`"),
+            );
+            error.combine(syn::Error::new_spanned(
+                &previous.ident,
+                "first fragment definition is here",
+            ));
             combine_error(&mut errors, error);
             continue;
         }
@@ -136,8 +154,11 @@ fn compose_destinations(items: &mut [Item], fragments: &HashMap<String, Fragment
             continue;
         };
 
-        let fragment_marker_count =
-            item_struct.attrs.iter().filter(|attribute| is_helper(attribute, "fragment")).count();
+        let fragment_marker_count = item_struct
+            .attrs
+            .iter()
+            .filter(|attribute| is_helper(attribute, "fragment"))
+            .count();
         let compose_attributes = item_struct
             .attrs
             .iter()
@@ -145,9 +166,9 @@ fn compose_destinations(items: &mut [Item], fragments: &HashMap<String, Fragment
             .cloned()
             .collect::<Vec<_>>();
 
-        item_struct
-            .attrs
-            .retain(|attribute| !is_helper(attribute, "fragment") && !is_helper(attribute, "compose"));
+        item_struct.attrs.retain(|attribute| {
+            !is_helper(attribute, "fragment") && !is_helper(attribute, "compose")
+        });
 
         if fragment_marker_count > 0 || compose_attributes.is_empty() {
             continue;
@@ -185,7 +206,10 @@ fn compose_destinations(items: &mut [Item], fragments: &HashMap<String, Fragment
     }
 }
 
-pub(crate) fn expand_standalone(mut destination: ItemStruct, entries: &[ComposeEntry]) -> Result<TokenStream> {
+pub(crate) fn expand_standalone(
+    mut destination: ItemStruct,
+    entries: &[ComposeEntry],
+) -> Result<TokenStream> {
     let local_fields = match &destination.fields {
         Fields::Named(fields) => fields.named.iter().cloned().collect::<Vec<_>>(),
         Fields::Unnamed(fields) => {
@@ -207,7 +231,13 @@ pub(crate) fn expand_standalone(mut destination: ItemStruct, entries: &[ComposeE
     let mut generated_fields = Vec::new();
 
     for field in &local_fields {
-        record_field(field, &destination.ident, "local fields".to_owned(), &mut seen_fields, &mut errors);
+        record_field(
+            field,
+            &destination.ident,
+            "local fields".to_owned(),
+            &mut seen_fields,
+            &mut errors,
+        );
     }
 
     for entry in entries {
@@ -330,12 +360,21 @@ fn append_fragment_fields(
 ) {
     let name = fragment_name.to_string();
     let Some(fragment) = fragments.get(&name) else {
-        combine_error(errors, syn::Error::new_spanned(fragment_name, format!("unknown fragment `{name}`")));
+        combine_error(
+            errors,
+            syn::Error::new_spanned(fragment_name, format!("unknown fragment `{name}`")),
+        );
         return;
     };
 
     for field in &fragment.fields {
-        record_field(field, destination, format!("fragment `{}`", fragment.ident), seen_fields, errors);
+        record_field(
+            field,
+            destination,
+            format!("fragment `{}`", fragment.ident),
+            seen_fields,
+            errors,
+        );
         output_fields.push(field.clone());
     }
 }
@@ -348,7 +387,13 @@ fn append_local_fields(
     errors: &mut Option<syn::Error>,
 ) {
     for field in local_fields {
-        record_field(field, destination, "local fields".to_owned(), seen_fields, errors);
+        record_field(
+            field,
+            destination,
+            "local fields".to_owned(),
+            seen_fields,
+            errors,
+        );
         output_fields.push(field.clone());
     }
 }
@@ -458,7 +503,10 @@ mod tests {
 
         let expanded: ItemMod = parse2(expand(input).expect("module should expand"))
             .expect("expanded tokens should remain a module");
-        let (_, items) = expanded.content.as_ref().expect("module should remain inline");
+        let (_, items) = expanded
+            .content
+            .as_ref()
+            .expect("module should remain inline");
         let destination = items
             .iter()
             .find_map(|item| match item {
@@ -477,8 +525,18 @@ mod tests {
 
         assert_eq!(names, ["id", "created_at", "local"]);
         assert!(matches!(fields.named[0].vis, syn::Visibility::Public(_)));
-        assert!(fields.named[0].attrs.iter().any(|attribute| attribute.path().is_ident("doc")));
-        assert!(fields.named[1].attrs.iter().any(|attribute| attribute.path().is_ident("cfg")));
+        assert!(
+            fields.named[0]
+                .attrs
+                .iter()
+                .any(|attribute| attribute.path().is_ident("doc"))
+        );
+        assert!(
+            fields.named[1]
+                .attrs
+                .iter()
+                .any(|attribute| attribute.path().is_ident("cfg"))
+        );
 
         let tokens = expanded.into_token_stream().to_string();
         assert!(!tokens.contains("fragment"));
@@ -505,9 +563,15 @@ mod tests {
 
         let expanded: ItemMod = parse2(expand(input).expect("module should expand"))
             .expect("expanded tokens should remain a module");
-        assert_eq!(field_names(&expanded, "Model"), ["a", "local_one", "local_two", "metadata", "b"]);
+        assert_eq!(
+            field_names(&expanded, "Model"),
+            ["a", "local_one", "local_two", "metadata", "b"]
+        );
 
-        let (_, items) = expanded.content.as_ref().expect("module should remain inline");
+        let (_, items) = expanded
+            .content
+            .as_ref()
+            .expect("module should remain inline");
         let destination = items
             .iter()
             .find_map(|item| match item {
@@ -519,7 +583,10 @@ mod tests {
             panic!("destination should have named fields");
         };
         assert!(matches!(fields.named[3].vis, syn::Visibility::Public(_)));
-        assert_eq!(fields.named[3].ty.to_token_stream().to_string(), "Option < String >");
+        assert_eq!(
+            fields.named[3].ty.to_token_stream().to_string(),
+            "Option < String >"
+        );
     }
 
     #[test]
@@ -539,11 +606,17 @@ mod tests {
 
         let expanded: ItemMod = parse2(expand(input).expect("module should expand"))
             .expect("expanded tokens should remain a module");
-        assert_eq!(field_names(&expanded, "Model"), ["a", "nested", "b", "local"]);
+        assert_eq!(
+            field_names(&expanded, "Model"),
+            ["a", "nested", "b", "local"]
+        );
     }
 
     fn field_names(module: &ItemMod, struct_name: &str) -> Vec<String> {
-        let (_, items) = module.content.as_ref().expect("module should remain inline");
+        let (_, items) = module
+            .content
+            .as_ref()
+            .expect("module should remain inline");
         let destination = items
             .iter()
             .find_map(|item| match item {
@@ -555,6 +628,10 @@ mod tests {
             panic!("destination should have named fields");
         };
 
-        fields.named.iter().map(|field| field.ident.as_ref().expect("named field").to_string()).collect()
+        fields
+            .named
+            .iter()
+            .map(|field| field.ident.as_ref().expect("named field").to_string())
+            .collect()
     }
 }

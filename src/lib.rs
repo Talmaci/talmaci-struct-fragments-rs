@@ -110,9 +110,12 @@ pub fn compose(args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn struct_fragments(args: TokenStream, input: TokenStream) -> TokenStream {
     if !args.is_empty() {
-        return syn::Error::new(proc_macro2::Span::call_site(), "`struct_fragments` does not accept arguments")
-            .into_compile_error()
-            .into();
+        return syn::Error::new(
+            proc_macro2::Span::call_site(),
+            "`struct_fragments` does not accept arguments",
+        )
+        .into_compile_error()
+        .into();
     }
 
     match syn::parse(input).and_then(expand::expand) {
