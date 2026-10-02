@@ -1,0 +1,11 @@
+error: duplicate field `timestamps` in composed struct `User`
+ --> tests/ui/fail/standalone_duplicate_local.rs:5:11
+  |
+5 | #[compose(timestamps: Timestamps)]
+  |           ^^^^^^^^^^
+
+error: first defined here (from local fields)
+ --> tests/ui/fail/standalone_duplicate_local.rs:7:5
+  |
+7 |     timestamps: String,
+  |     ^^^^^^^^^^

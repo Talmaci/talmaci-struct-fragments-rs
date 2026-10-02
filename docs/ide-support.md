@@ -3,8 +3,9 @@
 ## Expected rust-analyzer behavior
 
 With procedural-macro expansion enabled, rust-analyzer analyzes the output of
-`#[struct_fragments]` as ordinary Rust syntax. The generated destination structs
-therefore participate in type inference and should provide:
+standalone `#[compose]` and module-level `#[struct_fragments]` as ordinary Rust
+syntax. The generated destination structs therefore participate in type
+inference and should provide:
 
 - record-literal field completion for composed structs;
 - field-access completion such as `user.id` and `user.name`;
@@ -40,10 +41,11 @@ shape matters.
 
 ## What is automated in this repository
 
-The `examples/basic.rs` downstream-style target verifies normal construction,
-field access, and type checking. Integration and UI tests verify valid generated
-fields and diagnostics for invalid or conflicting fields. `cargo expand
---example basic` verifies the final emitted struct syntax.
+The `examples/standalone.rs` and `examples/basic.rs` downstream-style targets
+verify both public contexts, normal construction, field access, and type
+checking. Integration and UI tests verify valid generated fields and diagnostics
+for invalid or conflicting fields. `cargo expand --example standalone` and
+`cargo expand --example basic` verify the final emitted struct syntax.
 
 The current development environment does not have a rust-analyzer binary, so
 LSP requests for completion, hover, go-to-definition, and rename cannot be

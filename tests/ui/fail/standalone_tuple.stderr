@@ -1,0 +1,5 @@
+error: standalone `compose` supports only structs with named fields; tuple structs are not supported
+ --> tests/ui/fail/standalone_tuple.rs:6:12
+  |
+6 | struct User(i32);
+  |            ^^^^^

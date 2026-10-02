@@ -1,0 +1,11 @@
+error: duplicate field `metadata` in composed struct `User`
+ --> tests/ui/fail/standalone_duplicate_nested.rs:6:31
+  |
+6 | #[compose(metadata: Metadata, metadata: OtherMetadata)]
+  |                               ^^^^^^^^
+
+error: first defined here (from nested field `metadata`)
+ --> tests/ui/fail/standalone_duplicate_nested.rs:6:11
+  |
+6 | #[compose(metadata: Metadata, metadata: OtherMetadata)]
+  |           ^^^^^^^^

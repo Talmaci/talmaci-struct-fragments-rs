@@ -1,0 +1,5 @@
+error: flattened fragment `Timestamps` requires `#[struct_fragments]` module context; standalone `#[compose]` supports nested fields only
+ --> tests/ui/fail/standalone_flatten.rs:5:11
+  |
+5 | #[compose(Timestamps)]
+  |           ^^^^^^^^^^

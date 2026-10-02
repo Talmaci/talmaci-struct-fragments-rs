@@ -5,7 +5,7 @@ use quote::quote;
 use syn::{Field, FieldMutability, Fields, Ident, Item, ItemMod, ItemStruct, Result, Visibility};
 
 use crate::model::{ComposeEntry, FieldOrigin, Fragment};
-use crate::parse::{is_helper, parse_compose, validate_compose, validate_fragment};
+use crate::parse::{is_helper, parse_compose, validate_fragment, validate_module_compose};
 
 pub(crate) fn expand(mut module: ItemMod) -> Result<TokenStream> {
     let Some((_, items)) = &mut module.content else {
@@ -169,7 +169,7 @@ fn compose_destinations(items: &mut [Item], fragments: &HashMap<String, Fragment
             }
         };
 
-        if let Err(error) = validate_compose(&requested) {
+        if let Err(error) = validate_module_compose(&requested) {
             combine_error(&mut errors, error);
             continue;
         }
@@ -183,6 +183,62 @@ fn compose_destinations(items: &mut [Item], fragments: &HashMap<String, Fragment
         Some(error) => Err(error),
         None => Ok(()),
     }
+}
+
+pub(crate) fn expand_standalone(mut destination: ItemStruct, entries: &[ComposeEntry]) -> Result<TokenStream> {
+    let local_fields = match &destination.fields {
+        Fields::Named(fields) => fields.named.iter().cloned().collect::<Vec<_>>(),
+        Fields::Unnamed(fields) => {
+            return Err(syn::Error::new_spanned(
+                fields,
+                "standalone `compose` supports only structs with named fields; tuple structs are not supported",
+            ));
+        }
+        Fields::Unit => {
+            return Err(syn::Error::new_spanned(
+                &destination.ident,
+                "standalone `compose` supports only structs with named fields; unit structs are not supported",
+            ));
+        }
+    };
+
+    let mut errors = None;
+    let mut seen_fields: HashMap<String, FieldOrigin> = HashMap::new();
+    let mut generated_fields = Vec::new();
+
+    for field in &local_fields {
+        record_field(field, &destination.ident, "local fields".to_owned(), &mut seen_fields, &mut errors);
+    }
+
+    for entry in entries {
+        let ComposeEntry::Nested {
+            field_name,
+            colon_token,
+            ty,
+        } = entry
+        else {
+            continue;
+        };
+        let field = nested_field(field_name, colon_token, ty);
+        record_field(
+            &field,
+            &destination.ident,
+            format!("nested field `{field_name}`"),
+            &mut seen_fields,
+            &mut errors,
+        );
+        generated_fields.push(field);
+    }
+
+    if let Some(error) = errors {
+        return Err(error);
+    }
+
+    let Fields::Named(fields) = &mut destination.fields else {
+        unreachable!("destination field shape was checked above");
+    };
+    fields.named.extend(generated_fields);
+    Ok(quote!(#destination))
 }
 
 fn compose_struct(

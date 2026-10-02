@@ -1,0 +1,5 @@
+error: nested composition uses `field_name: Type`, not `field_name = Type`
+ --> tests/ui/fail/standalone_malformed.rs:5:20
+  |
+5 | #[compose(metadata = Metadata)]
+  |                    ^

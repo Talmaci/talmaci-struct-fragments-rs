@@ -17,19 +17,10 @@ pub(crate) fn validate_fragment(attribute: &Attribute) -> Result<()> {
 }
 
 pub(crate) fn parse_compose(attribute: &Attribute) -> Result<Vec<ComposeEntry>> {
-    let entries = attribute
-        .parse_args_with(Punctuated::<ComposeEntry, Token![,]>::parse_terminated)?
-        .into_iter()
-        .collect::<Vec<_>>();
-
-    if entries.is_empty() {
-        return Err(syn::Error::new_spanned(attribute, "`compose` requires at least one entry"));
-    }
-
-    Ok(entries)
+    Ok(attribute.parse_args::<ComposeArgs>()?.entries)
 }
 
-pub(crate) fn validate_compose(entries: &[ComposeEntry]) -> Result<()> {
+pub(crate) fn validate_module_compose(entries: &[ComposeEntry]) -> Result<()> {
     let mut first_self: Option<Span> = None;
 
     for entry in entries {
@@ -47,6 +38,47 @@ pub(crate) fn validate_compose(entries: &[ComposeEntry]) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub(crate) fn validate_standalone_compose(entries: &[ComposeEntry]) -> Result<()> {
+    for entry in entries {
+        match entry {
+            ComposeEntry::Flatten(fragment) => {
+                return Err(syn::Error::new_spanned(
+                    fragment,
+                    format!(
+                        "flattened fragment `{fragment}` requires `#[struct_fragments]` module context; standalone `#[compose]` supports nested fields only"
+                    ),
+                ));
+            }
+            ComposeEntry::SelfFields { self_token } => {
+                return Err(syn::Error::new(
+                    self_token.span,
+                    "`self` requires `#[struct_fragments]` module context; standalone `#[compose]` supports nested fields only",
+                ));
+            }
+            ComposeEntry::Nested { .. } => {}
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) struct ComposeArgs {
+    pub(crate) entries: Vec<ComposeEntry>,
+}
+
+impl Parse for ComposeArgs {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
+        let entries =
+            Punctuated::<ComposeEntry, Token![,]>::parse_terminated(input)?.into_iter().collect::<Vec<_>>();
+
+        if entries.is_empty() {
+            return Err(input.error("`compose` requires at least one entry"));
+        }
+
+        Ok(Self { entries })
+    }
 }
 
 impl Parse for ComposeEntry {

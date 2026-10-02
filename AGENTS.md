@@ -3,12 +3,17 @@
 ## Architecture
 
 - This is a Rust 2024 procedural macro crate.
+- The exported standalone `#[compose(field: Type)]` attribute supports nested
+  fields only. It preserves the input `ItemStruct`, leaves local fields first,
+  and appends public nested fields in attribute order.
 - `#[struct_fragments]` must operate on a complete inline module. Stable proc
   macros cannot query rustc for a named type's fields, so do not replace this
   with independent attribute invocations or introduce global registries,
   filesystem caches, or ordering assumptions.
-- `#[fragment]` and `#[compose(...)]` are helper attributes consumed and removed
-  by the outer macro. Fragment structs remain in generated output.
+- Inside `#[struct_fragments]`, `#[fragment]` and `#[compose(...)]` are helper
+  attributes consumed and removed by the outer macro. Fragment structs remain
+  in generated output. Module-level `compose` supports flattening, nesting, and
+  `self` placement.
 - Flattening (`Fragment`) and nesting (`field: Type`) are distinct operations.
   Only flattened fragment names are resolved against the module registry.
 - Expansion clones each flattened `syn::Field` so all field metadata is
@@ -23,7 +28,8 @@
 - Fragment structs remain ordinary structs and may be flattened or used as the
   type of a nested field.
 - Generic fragments are intentionally rejected in the MVP. Generic destination
-  structs work because fragment fields themselves are non-generic.
+  structs work in both contexts because fragment fields themselves are
+  non-generic and standalone expansion preserves the destination syntax.
 
 ## Scope
 
@@ -31,6 +37,10 @@ Keep the API explicit and small. Do not add omit/pick/rename/optional or
 mapped-type-style transformations, generated conversions, conditional
 composition, derive propagation, cross-module lookup, or framework-specific
 behavior without explicit future design work.
+
+Never attempt standalone flattening through source discovery, shared mutable
+state, invocation ordering, or filesystem access. It is intentionally rejected
+with a diagnostic directing users to `#[struct_fragments]`.
 
 Do not add editor-specific generated files, caches, extensions, language-server
 plugins, or build-script workarounds. rust-analyzer owns completion, navigation,

@@ -12,6 +12,13 @@ invocation ordering.
 Fragment definitions remain ordinary structs in the output. Their helper
 attributes are removed before emitting the transformed module.
 
+The exported standalone `#[compose(...)]` attribute receives one `ItemStruct`.
+It can append nested fields because their names and complete Rust types are in
+the attribute input. It cannot flatten a type name because that type's fields
+are not available to the invocation. Standalone flattening and `self` are
+therefore rejected during validation rather than approximated through external
+state.
+
 ## Compose grammar
 
 The parser produces one `ComposeEntry` per comma-separated entry:
@@ -39,6 +46,9 @@ self              insert the destination's local fields
 do not need to reference fragments. `self` is a reserved placement entry and
 may occur at most once.
 
+Both public contexts share this parser. Module-level validation accepts all
+three variants. Standalone validation accepts only `Nested`.
+
 ## Expansion order
 
 After parsing and structural validation, expansion walks compose entries from
@@ -52,6 +62,11 @@ left to right:
 
 If there is no `SelfFields` entry, local fields are appended after all compose
 entries. An explicit `self` remains valid when there are no local fields.
+
+Standalone expansion uses a deliberately different fixed order: unchanged
+local fields first, followed by nested fields in attribute order. It preserves
+the rest of the parsed `ItemStruct`, including attributes, derives, visibility,
+generics, and where clauses.
 
 Every appended field is registered by name before final output is assigned.
 Conflicts between any flattened, nested, or local sources produce a diagnostic

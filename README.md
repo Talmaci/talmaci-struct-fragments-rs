@@ -4,16 +4,67 @@ Compile-time reusable struct field composition for Rust.
 
 Rust backend applications often repeat groups of fields across API responses,
 persistence records, internal models, list/detail representations, and audit or
-timestamp structures. This crate lets those field groups be declared once and
-flattened into related structs at compile time.
+timestamp structures. This crate supports both reusable flattened field groups
+and concise nested fields at compile time.
 
 This is deliberately **not inheritance** and does not model TypeScript-style
 `extends`. The generated types are ordinary Rust structs, with no runtime
 abstraction and no runtime overhead.
 
-## Composition forms
+## Standalone nested composition
 
-`compose` has three explicit entry forms.
+Use the exported `compose` attribute directly when every added field is nested:
+
+```rust
+use talmaci_struct_fragments_rs::compose;
+
+pub struct Timestamps {
+    pub created_at: u64,
+    pub updated_at: u64,
+}
+
+pub struct Metadata {
+    pub label: String,
+}
+
+#[compose(
+    timestamps: Timestamps,
+    metadata: Option<Metadata>,
+)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+}
+```
+
+This expands conceptually to:
+
+```rust
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub timestamps: Timestamps,
+    pub metadata: Option<Metadata>,
+}
+```
+
+Local fields stay first. Generated nested fields are public and follow in the
+order listed. Their types are parsed as ordinary Rust types and do not need to
+be fragments. The original struct's attributes, derives, visibility, generics,
+where clauses, documentation, and local fields are preserved.
+
+Standalone `compose` accepts only `field_name: Type` entries. Flatten entries
+such as `#[compose(Timestamps)]` and `self` require module-level composition and
+produce explicit diagnostics in standalone context.
+
+## Flattened composition
+
+Flattening requires `struct_fragments` around an inline module because the outer
+macro must receive each fragment's syntax tree in the same invocation. A stable
+attribute macro cannot inspect the fields of an arbitrary type name.
+
+Inside `#[struct_fragments]`, the helper `compose` attribute has three entry
+forms.
 
 ### Flatten
 
@@ -47,8 +98,8 @@ The right-hand side is parsed as a Rust type, so types such as
 
 ### Local placement
 
-Destination-local fields normally follow all compose entries. A standalone
-`self` places them explicitly instead:
+Destination-local fields normally follow all module-level compose entries. The
+`self` entry places them explicitly instead:
 
 ```rust
 #[compose(Identity, self, Timestamps)]
@@ -56,7 +107,7 @@ Destination-local fields normally follow all compose entries. A standalone
 
 Local fields retain their original order, and `self` may appear at most once.
 
-## Complete example
+## Complete module-level example
 
 ```rust
 use talmaci_struct_fragments_rs::struct_fragments;
@@ -136,26 +187,30 @@ for macro-generated copies is also editor-dependent; see
 [IDE support and limitations](docs/ide-support.md) for the detailed expectations
 and manual verification checklist.
 
-## Why composition is module-level
+## Why flattening is module-level
 
 A stable procedural macro cannot receive only a type name and ask rustc for
 that type's fields. Separate macro invocations also have no reliable ordering
 or shared semantic registry. `#[struct_fragments]` therefore receives one
 inline module syntax tree, discovers all fragments in it, and expands every
-composition deterministically in a single invocation. It uses no global state,
-filesystem cache, or invocation-order assumptions.
+composition deterministically in a single invocation. Standalone nested
+composition needs no lookup and can operate directly on one struct. Neither
+path uses global state, filesystem caches, or invocation-order assumptions.
 
 ## Diagnostics
 
 Composition reports compile-time errors for unknown flattened fragments,
-duplicate field names across every field source, duplicate `self` entries,
-malformed entry syntax, tuple structs, and generic fragment definitions.
-Duplicate diagnostics point to both the conflicting and original fields when
-possible. Fields are never silently renamed or overwritten.
+standalone flatten or `self` attempts, duplicate field names across every field
+source, duplicate module-level `self` entries, malformed entry syntax,
+unsupported struct shapes, and generic fragment definitions. Duplicate
+diagnostics point to both the conflicting and original fields when possible.
+Fields are never silently renamed or overwritten.
 
 ## Current limitations
 
-- Only inline modules and named-field structs are supported.
+- Standalone `compose` supports only named-field structs and nested entries.
+- Fragment flattening supports only inline `struct_fragments` modules and
+  named-field structs.
 - Fragment names are unqualified identifiers in the same annotated module.
 - Generic fragments are rejected. Generic destination structs are supported.
 - Field omission, renaming, transformations, conditional mappings, generated

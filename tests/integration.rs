@@ -1,4 +1,35 @@
-use talmaci_struct_fragments_rs::struct_fragments;
+use talmaci_struct_fragments_rs::{compose, struct_fragments};
+
+#[derive(Debug)]
+struct StandaloneTimestamps {
+    created_at: u64,
+    updated_at: u64,
+}
+
+#[derive(Debug)]
+struct StandaloneMetadata {
+    label: String,
+}
+
+#[compose(
+    timestamps: StandaloneTimestamps,
+    metadata: Option<StandaloneMetadata>,
+    tags: Vec<String>,
+)]
+#[derive(Debug)]
+struct StandaloneUser {
+    id: i32,
+    name: String,
+}
+
+#[compose(metadata: StandaloneMetadata)]
+#[derive(Debug)]
+struct StandaloneWrapper<T>
+where
+    T: Clone,
+{
+    value: T,
+}
 
 #[struct_fragments]
 #[allow(dead_code)]
@@ -45,6 +76,38 @@ fn nested_fields_accept_fragment_and_regular_types() {
     assert_eq!(user.id, 8);
     assert_eq!(user.timestamps.updated_at, 40);
     assert_eq!(user.metadata.expect("metadata should exist").label, "admin");
+}
+
+#[test]
+fn standalone_compose_preserves_struct_and_appends_nested_fields() {
+    let user = StandaloneUser {
+        id: 9,
+        name: "Lin".to_owned(),
+        timestamps: StandaloneTimestamps {
+            created_at: 50,
+            updated_at: 60,
+        },
+        metadata: Some(StandaloneMetadata {
+            label: "staff".to_owned(),
+        }),
+        tags: vec!["rust".to_owned()],
+    };
+    let wrapper = StandaloneWrapper {
+        value: 11_u32,
+        metadata: StandaloneMetadata {
+            label: "generic".to_owned(),
+        },
+    };
+
+    assert_eq!(user.id, 9);
+    assert_eq!(user.name, "Lin");
+    assert_eq!(user.timestamps.created_at, 50);
+    assert_eq!(user.timestamps.updated_at, 60);
+    assert_eq!(user.metadata.expect("metadata should exist").label, "staff");
+    assert_eq!(user.tags, ["rust"]);
+    assert_eq!(wrapper.value, 11);
+    assert_eq!(wrapper.metadata.label, "generic");
+    assert!(format!("{wrapper:?}").contains("StandaloneWrapper"));
 }
 
 #[test]

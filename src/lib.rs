@@ -1,15 +1,63 @@
 //! Compile-time reusable struct field composition for Rust.
 //!
-//! The [`struct_fragments`] attribute operates on an inline module. Within that
-//! module, `#[fragment]` marks ordinary named-field structs whose fields may be
-//! copied into structs marked with `#[compose(...)]`. Compose entries can also
-//! generate nested fields or place a destination's local fields with `self`.
+//! Use [`compose`] directly on a named-field struct to append public nested
+//! fields. Use [`struct_fragments`] on an inline module when fields must be
+//! flattened from reusable fragment definitions.
 
 use proc_macro::TokenStream;
 
 mod expand;
 mod model;
 mod parse;
+
+/// Appends public nested fields to a standalone named-field struct.
+///
+/// Every entry has the form `field_name: Type`. Local fields stay first and
+/// generated fields follow in entry order. Nested types are ordinary Rust types
+/// and do not need to be fragments.
+///
+/// Standalone `compose` deliberately does not accept flattened fragment names or
+/// `self`. Flattening requires the module-level [`struct_fragments`] macro so the
+/// fragment syntax tree is available in the same invocation.
+///
+/// The original struct's attributes, derives, visibility, generics, where
+/// clauses, documentation, and local fields are preserved.
+///
+/// # Example
+///
+/// ```
+/// use talmaci_struct_fragments_rs::compose;
+///
+/// struct Metadata {
+///     label: String,
+/// }
+///
+/// #[compose(metadata: Option<Metadata>, tags: Vec<String>)]
+/// struct User {
+///     id: i32,
+/// }
+///
+/// let user = User {
+///     id: 1,
+///     metadata: None,
+///     tags: vec!["rust".to_owned()],
+/// };
+/// assert_eq!(user.tags, ["rust"]);
+/// ```
+#[proc_macro_attribute]
+pub fn compose(args: TokenStream, input: TokenStream) -> TokenStream {
+    let result = (|| {
+        let args = syn::parse::<parse::ComposeArgs>(args)?;
+        parse::validate_standalone_compose(&args.entries)?;
+        let destination = syn::parse::<syn::ItemStruct>(input)?;
+        expand::expand_standalone(destination, &args.entries)
+    })();
+
+    match result {
+        Ok(output) => output.into(),
+        Err(error) => error.into_compile_error().into(),
+    }
+}
 
 /// Composes reusable field fragments within an inline module.
 ///

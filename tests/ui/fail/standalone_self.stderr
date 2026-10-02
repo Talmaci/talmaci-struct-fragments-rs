@@ -1,0 +1,5 @@
+error: `self` requires `#[struct_fragments]` module context; standalone `#[compose]` supports nested fields only
+ --> tests/ui/fail/standalone_self.rs:3:11
+  |
+3 | #[compose(self)]
+  |           ^^^^

@@ -1,0 +1,5 @@
+error: standalone `compose` supports only structs with named fields; unit structs are not supported
+ --> tests/ui/fail/standalone_unit.rs:6:8
+  |
+6 | struct User;
+  |        ^^^^
