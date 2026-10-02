@@ -1,0 +1,11 @@
+error: duplicate field `id` in composed struct `Model`
+  --> tests/ui/fail/duplicate_local.rs:12:9
+   |
+12 |         id: u64,
+   |         ^^
+
+error: first defined here (from fragment `Core`)
+ --> tests/ui/fail/duplicate_local.rs:7:9
+  |
+7 |         id: i32,
+  |         ^^

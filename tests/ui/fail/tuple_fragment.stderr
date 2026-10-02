@@ -1,0 +1,5 @@
+error: fragments must be structs with named fields
+ --> tests/ui/fail/tuple_fragment.rs:6:16
+  |
+6 |     struct Pair(i32, i32);
+  |                ^^^^^^^^^^

@@ -1,0 +1,5 @@
+error: generic fragments are not supported in this version
+ --> tests/ui/fail/generic_fragment.rs:6:19
+  |
+6 |     struct Wrapper<T> {
+  |                   ^^^

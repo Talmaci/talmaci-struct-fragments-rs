@@ -1,0 +1,11 @@
+error: `self` may appear at most once in `compose`
+  --> tests/ui/fail/duplicate_self.rs:10:24
+   |
+10 |     #[compose(self, A, self)]
+   |                        ^^^^
+
+error: first `self` entry is here
+  --> tests/ui/fail/duplicate_self.rs:10:15
+   |
+10 |     #[compose(self, A, self)]
+   |               ^^^^

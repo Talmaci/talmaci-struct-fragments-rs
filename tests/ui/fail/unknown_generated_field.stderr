@@ -1,0 +1,7 @@
+error[E0609]: no field `missing` on type `User`
+  --> tests/ui/fail/unknown_generated_field.rs:16:18
+   |
+16 |     let _ = user.missing;
+   |                  ^^^^^^^ unknown field
+   |
+   = note: available field is: `id`

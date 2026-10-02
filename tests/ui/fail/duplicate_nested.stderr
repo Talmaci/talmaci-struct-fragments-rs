@@ -1,0 +1,11 @@
+error: duplicate field `metadata` in composed struct `Model`
+ --> tests/ui/fail/duplicate_nested.rs:5:30
+  |
+5 |     #[compose(metadata: u64, metadata: String)]
+  |                              ^^^^^^^^
+
+error: first defined here (from nested field `metadata`)
+ --> tests/ui/fail/duplicate_nested.rs:5:15
+  |
+5 |     #[compose(metadata: u64, metadata: String)]
+  |               ^^^^^^^^

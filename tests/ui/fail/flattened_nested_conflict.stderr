@@ -1,0 +1,11 @@
+error: duplicate field `metadata` in composed struct `Model`
+  --> tests/ui/fail/flattened_nested_conflict.rs:10:21
+   |
+10 |     #[compose(Core, metadata: u64)]
+   |                     ^^^^^^^^
+
+error: first defined here (from fragment `Core`)
+ --> tests/ui/fail/flattened_nested_conflict.rs:7:9
+  |
+7 |         metadata: String,
+  |         ^^^^^^^^

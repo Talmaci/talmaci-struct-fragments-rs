@@ -1,0 +1,22 @@
+[package]
+name = "talmaci-struct-fragments-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Compile-time reusable struct field composition for Rust"
+license = "MIT"
+documentation = "https://docs.rs/talmaci-struct-fragments-rs"
+readme = "README.md"
+keywords = ["proc-macro", "macros", "code-generation", "struct", "composition"]
+categories = ["development-tools::procedural-macro-helpers"]
+exclude = ["AGENTS.md"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
+
+[dev-dependencies]
+trybuild = "1"

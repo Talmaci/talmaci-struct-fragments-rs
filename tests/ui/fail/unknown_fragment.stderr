@@ -1,0 +1,5 @@
+error: unknown fragment `DoesNotExist`
+ --> tests/ui/fail/unknown_fragment.rs:5:15
+  |
+5 |     #[compose(DoesNotExist)]
+  |               ^^^^^^^^^^^^
